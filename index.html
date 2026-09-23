@@ -1,89 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>King's College Doha - Air Quality</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>King's College Doha Air Quality</title>
 <style>
-:root{--red:#cf033c;--gold:#c2a572;--ink:#252525}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:transparent;font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;color:var(--ink)}
-.widget{width:100%;display:flex;justify-content:center;padding:10px}
-.panel{position:relative;overflow:hidden;width:min(100%,760px);background:#fff;border:1px solid rgba(194,165,114,.65);border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.08);padding:22px 24px 18px}
-.panel:before{content:"";position:absolute;top:0;left:0;right:0;height:6px;background:var(--red)}
-.header{text-align:center;margin:3px 0 18px}
-.header .title{color:var(--red);font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.header .school{font-size:21px;font-weight:700;margin-top:3px}
-.stations{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.station{display:flex;align-items:center;justify-content:center;gap:17px;padding:10px}
-.station+.station{border-left:1px solid #e7dfd1}
-.indicator{width:104px;height:104px;flex:0 0 104px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#e5e7eb;color:#111;border:4px solid #fff;outline:2px solid var(--gold);box-shadow:0 3px 10px rgba(0,0,0,.12)}
-.aqi{font-size:39px;line-height:1;font-weight:800}
-.aqi-label{margin-top:5px;font-size:10px;font-weight:700;letter-spacing:.1em}
-.details{text-align:left;min-width:0}
-.campus{font-size:17px;font-weight:800}
-.status{margin-top:4px;font-size:17px;line-height:1.2;font-weight:700}
-.gold-line{width:36px;height:3px;margin-top:9px;border-radius:2px;background:var(--gold)}
-.updated{text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#666}
-@media(max-width:620px){
-  .panel{padding:20px 14px 14px}
-  .stations{grid-template-columns:1fr}
-  .station{justify-content:flex-start;max-width:330px;width:100%;margin:auto}
-  .station+.station{border-left:0;border-top:1px solid #e7dfd1;padding-top:20px}
-}
+:root{--red:#cf033c;--gold:#c2a572;--ink:#222}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:transparent;font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;color:var(--ink)}
+.wrap{width:100%;padding:6px}
+.bar{width:100%;min-height:104px;display:grid;grid-template-columns:1.35fr 1.4fr 1.4fr 1.05fr;align-items:stretch;background:#fff;border:1px solid var(--gold);border-radius:14px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.brand{background:var(--red);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:15px 22px}
+.brand-title{font-size:17px;font-weight:800;letter-spacing:.15em}.brand-line{height:1px;background:rgba(255,255,255,.65);margin:8px 0}.brand-school{font-size:10px;font-weight:700;letter-spacing:.17em}
+.station{display:flex;align-items:center;gap:13px;padding:12px 20px;border-right:1px solid rgba(194,165,114,.65)}
+.dot{width:54px;height:54px;flex:0 0 54px;border-radius:50%;background:#ddd;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.campus{font-size:15px;font-weight:800;margin-bottom:5px;white-space:nowrap}.reading{display:flex;align-items:baseline;gap:8px;white-space:nowrap}.aqi{font-size:28px;font-weight:800;line-height:1}.sep{color:#aaa}.status{font-size:16px;font-weight:800}
+.time{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 18px}.clock{font-size:28px;color:#666}.time-label{font-size:12px;color:#666}.time-value{font-size:14px;font-weight:700;margin-top:3px;white-space:nowrap}
+@media(max-width:720px){.bar{grid-template-columns:1fr 1fr}.brand{grid-column:1/-1;min-height:70px}.station{border-top:1px solid #eee}.station:nth-of-type(3){border-right:0}.time{grid-column:1/-1;border-top:1px solid #eee;min-height:55px}.brand-title{font-size:15px}.brand-school{font-size:9px}}
+@media(max-width:450px){.station{padding:10px;gap:8px}.dot{width:42px;height:42px;flex-basis:42px}.campus{font-size:13px}.aqi{font-size:23px}.status{font-size:13px}}
 </style>
-</head>
-<body>
-<div class="widget">
- <div class="panel">
-  <div class="header"><div class="title">Current Air Quality</div><div class="school">King's College Doha</div></div>
-  <div class="stations">
-   <div class="station">
-    <div class="indicator" id="al-indicator"><div class="aqi" id="al-aqi">--</div><div class="aqi-label">US AQI</div></div>
-    <div class="details"><div class="campus">Al Thumama</div><div class="status" id="al-status">Loading…</div><div class="gold-line"></div></div>
-   </div>
-   <div class="station">
-    <div class="indicator" id="me-indicator"><div class="aqi" id="me-aqi">--</div><div class="aqi-label">US AQI</div></div>
-    <div class="details"><div class="campus">Mesaimeer</div><div class="status" id="me-status">Loading…</div><div class="gold-line"></div></div>
-   </div>
-  </div>
-  <div class="updated" id="updated">Checking latest readings…</div>
- </div>
-</div>
+</head><body>
+<div class="wrap"><div class="bar">
+<div class="brand"><div class="brand-title">AIR QUALITY</div><div class="brand-line"></div><div class="brand-school">KING'S COLLEGE DOHA</div></div>
+<div class="station"><div class="dot" id="al-dot"></div><div><div class="campus">Al Thumama</div><div class="reading"><span class="aqi" id="al-aqi">--</span><span class="sep">|</span><span class="status" id="al-status">Loading…</span></div></div></div>
+<div class="station"><div class="dot" id="me-dot"></div><div><div class="campus">Mesaimeer</div><div class="reading"><span class="aqi" id="me-aqi">--</span><span class="sep">|</span><span class="status" id="me-status">Loading…</span></div></div></div>
+<div class="time"><div class="clock">◷</div><div><div class="time-label">Updated</div><div class="time-value" id="updated">Checking…</div></div></div>
+</div></div>
 <script>
-function category(aqi){
- if(aqi<=50)return{label:"Good",color:"#00E400",text:"#111"};
- if(aqi<=100)return{label:"Moderate",color:"#FFFF00",text:"#111"};
- if(aqi<=150)return{label:"Unhealthy for Sensitive Groups",color:"#FF7E00",text:"#111"};
- if(aqi<=200)return{label:"Unhealthy",color:"#FF0000",text:"#fff"};
- if(aqi<=300)return{label:"Very Unhealthy",color:"#8F3F97",text:"#fff"};
- return{label:"Hazardous",color:"#7E0023",text:"#fff"};
-}
-function show(prefix,aqi){
- const n=Number(aqi), ind=document.getElementById(prefix+"-indicator");
- if(!Number.isFinite(n))throw new Error("Invalid AQI");
- const c=category(n);
- document.getElementById(prefix+"-aqi").textContent=Math.round(n);
- document.getElementById(prefix+"-status").textContent=c.label;
- ind.style.backgroundColor=c.color;ind.style.color=c.text;
-}
-async function loadAQI(){
- try{
-  const r=await fetch("./data.json?t="+Date.now(),{cache:"no-store"});
-  if(!r.ok)throw new Error("Could not load data");
-  const d=await r.json();
-  show("al",d.stations.al_thumama.aqi);
-  show("me",d.stations.mesaimeer.aqi);
-  if(d.updated){
-   const time=new Date(d.updated).toLocaleTimeString("en-GB",{timeZone:"Asia/Qatar",hour:"2-digit",minute:"2-digit"});
-   document.getElementById("updated").textContent="Live campus readings • Updated "+time+" Doha time";
-  }
- }catch(e){
-  console.error(e);
-  document.getElementById("updated").textContent="Live readings temporarily unavailable";
- }
-}
-loadAQI();setInterval(loadAQI,300000);
-</script>
-</body>
-</html>
+function category(a){if(a<=50)return["Good","#00E400"];if(a<=100)return["Moderate","#FFFF00"];if(a<=150)return["Unhealthy for Sensitive Groups","#FF7E00"];if(a<=200)return["Unhealthy","#FF0000"];if(a<=300)return["Very Unhealthy","#8F3F97"];return["Hazardous","#7E0023"]}
+function show(p,a){a=Number(a);if(!Number.isFinite(a))throw Error("Invalid AQI");const c=category(a);document.getElementById(p+"-aqi").textContent=Math.round(a);document.getElementById(p+"-status").textContent=c[0];document.getElementById(p+"-status").style.color=c[1]==="#FFFF00"?"#a88400":c[1];document.getElementById(p+"-dot").style.background=c[1]}
+async function load(){try{const r=await fetch("./data.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw Error();const d=await r.json();show("al",d.stations.al_thumama.aqi);show("me",d.stations.mesaimeer.aqi);if(d.updated){const t=new Date(d.updated).toLocaleTimeString("en-GB",{timeZone:"Asia/Qatar",hour:"2-digit",minute:"2-digit"});document.getElementById("updated").textContent=t+" Doha time"}}catch(e){document.getElementById("updated").textContent="Temporarily unavailable"}}
+load();setInterval(load,300000);
+</script></body></html>
