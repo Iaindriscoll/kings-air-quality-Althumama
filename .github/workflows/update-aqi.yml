@@ -1,68 +1,72 @@
 name: Update Air Quality
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "*/10 * * * *"
-
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-
   update-air-quality:
-
     runs-on: ubuntu-latest
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
-
-      - name: Download IQAir data
+      - name: Fetch IQAir and update data
+        shell: bash
         run: |
-          curl --fail \
-          --silent \
-          --show-error \
-          "https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5" \
-          -o iqair.json
+          set -euo pipefail
 
+          URL="https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5"
 
-      - name: Extract AQI
-        run: |
+          curl -L --fail --retry 3 --connect-timeout 20 --max-time 60             -A "Mozilla/5.0"             -H "Accept: application/json"             "$URL" -o iqair.json
 
-          AQI=$(jq -r '.current.aqius' iqair.json)
+          echo "IQAir response:"
+          cat iqair.json
+          echo
 
-          echo "AQI received: $AQI"
+          jq empty iqair.json
 
-          if [ "$AQI" = "null" ] || [ -z "$AQI" ]; then
-            echo "Could not find AQI in IQAir response"
-            cat iqair.json
+          AQI=$(jq -r '
+            [
+              .current.aqius,
+              .current.pollution.aqius,
+              .data.current.aqius,
+              .data.current.pollution.aqius,
+              .aqius,
+              .aqi
+            ]
+            | map(select(. != null))
+            | .[0] // empty
+          ' iqair.json)
+
+          if [[ -z "$AQI" || ! "$AQI" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+            echo "No valid AQI value found in the IQAir response."
             exit 1
           fi
 
+          AQI=$(printf "%.0f" "$AQI")
           UPDATED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          jq -n \
-            --argjson aqi "$AQI" \
-            --arg updated "$UPDATED" \
-            '{aqi: $aqi, updated: $updated}' \
-            > data.json
+          jq -n --argjson aqi "$AQI" --arg updated "$UPDATED"             '{aqi: $aqi, updated: $updated}' > data.json
 
+          cat data.json
 
       - name: Commit updated AQI
+        shell: bash
         run: |
-
+          set -euo pipefail
           git config user.name "AQI Updater"
-          git config user.email "actions@github.com"
-
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data.json
 
           if git diff --cached --quiet; then
-            echo "No change"
-          else
-            git commit -m "Update air quality"
-            git push
+            echo "No data change to commit."
+            exit 0
           fi
+
+          git commit -m "Update live Al Thumama AQI"
+          git push
