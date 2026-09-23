@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, sans-serif;
+  }
+
+  .aqi-widget {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    text-align: center;
+  }
+
+  .aqi-main {
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  #aqi {
+    font-weight: 700;
+  }
+
+  #status {
+    font-weight: 700;
+  }
+
+  .updated {
+    margin-top: 5px;
+    font-size: 11px;
+    opacity: 0.65;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="aqi-widget">
+  <div>
+    <div class="aqi-main">
+      Current Air Quality:
+      <span id="aqi">Loading...</span>
+      <span id="separator"></span>
+      <span id="status"></span>
+    </div>
+
+    <div class="updated" id="updated">
+      King's College Doha
+    </div>
+  </div>
+</div>
+
+<script>
+
+const API =
+  "https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5";
+
+function getStatus(aqi) {
+  if (aqi <= 50) return "Good";
+  if (aqi <= 100) return "Moderate";
+  if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+  if (aqi <= 200) return "Unhealthy";
+  if (aqi <= 300) return "Very Unhealthy";
+  return "Hazardous";
+}
+
+async function loadAQI() {
+
+  try {
+
+    const response = await fetch(API, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error("IQAir response error");
+    }
+
+    const data = await response.json();
+
+    /*
+      Try the common IQAir response locations.
+    */
+
+    const aqi =
+      data.current?.pollution?.aqius ??
+      data.data?.current?.pollution?.aqius ??
+      data.aqius ??
+      data.aqi;
+
+    if (aqi === undefined || aqi === null) {
+      throw new Error("AQI value not found");
+    }
+
+    document.getElementById("aqi").textContent = aqi;
+    document.getElementById("separator").textContent = " – ";
+    document.getElementById("status").textContent =
+      getStatus(Number(aqi));
+
+    const now = new Date();
+
+    document.getElementById("updated").textContent =
+      "King's College Doha • Updated " +
+      now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+  } catch (error) {
+
+    console.error(error);
+
+    document.getElementById("aqi").textContent =
+      "Temporarily unavailable";
+
+    document.getElementById("separator").textContent = "";
+    document.getElementById("status").textContent = "";
+
+    document.getElementById("updated").textContent =
+      "King's College Doha";
+  }
+}
+
+loadAQI();
+
+/* Refresh every 5 minutes */
+setInterval(loadAQI, 300000);
+
+</script>
+
+</body>
+</html>
