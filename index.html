@@ -3,175 +3,146 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<title>King's College Doha - Air Quality</title>
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        background: transparent;
-        font-family: Arial, sans-serif;
-    }
-
-    .aqi-widget {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 90px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 12px;
-    }
-
-    .main {
-        font-size: 22px;
-        font-weight: 600;
-    }
-
-    #aqi {
-        font-weight: 700;
-    }
-
-    #status {
-        font-weight: 700;
-    }
-
-    .updated {
-        margin-top: 6px;
-        font-size: 11px;
-        opacity: 0.65;
-    }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, sans-serif;
+  }
+  .widget {
+    width: 100%;
+    min-height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    text-align: center;
+  }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    max-width: 520px;
+  }
+  .indicator {
+    width: 112px;
+    height: 112px;
+    flex: 0 0 112px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #e5e7eb;
+    color: #111;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+  }
+  .aqi-number {
+    font-size: 42px;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .aqi-label {
+    margin-top: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+  .details { text-align: left; }
+  .heading {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .status {
+    font-size: 25px;
+    line-height: 1.15;
+    font-weight: 800;
+  }
+  .campus {
+    margin-top: 7px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .updated {
+    margin-top: 4px;
+    font-size: 11px;
+    opacity: .65;
+  }
+  @media (max-width: 420px) {
+    .card { gap: 12px; }
+    .indicator { width: 94px; height: 94px; flex-basis: 94px; }
+    .aqi-number { font-size: 34px; }
+    .status { font-size: 20px; }
+  }
 </style>
 </head>
-
 <body>
-
-<div class="aqi-widget">
-
-    <div>
-
-        <div class="main">
-            Current Air Quality:
-            <span id="aqi">Loading...</span>
-            <span id="separator"></span>
-            <span id="status"></span>
-        </div>
-
-        <div class="updated" id="updated">
-            King's College Doha
-        </div>
-
+<div class="widget">
+  <div class="card">
+    <div class="indicator" id="indicator">
+      <div class="aqi-number" id="aqi">--</div>
+      <div class="aqi-label">US AQI</div>
     </div>
-
+    <div class="details">
+      <div class="heading">Current Air Quality</div>
+      <div class="status" id="status">Loading…</div>
+      <div class="campus">King's College Doha – Al Thumama</div>
+      <div class="updated" id="updated">Checking latest reading…</div>
+    </div>
+  </div>
 </div>
 
 <script>
-
-function getStatus(aqi) {
-
-    if (aqi <= 50) {
-        return "Good";
-    }
-
-    if (aqi <= 100) {
-        return "Moderate";
-    }
-
-    if (aqi <= 150) {
-        return "Unhealthy for Sensitive Groups";
-    }
-
-    if (aqi <= 200) {
-        return "Unhealthy";
-    }
-
-    if (aqi <= 300) {
-        return "Very Unhealthy";
-    }
-
-    return "Hazardous";
+function category(aqi) {
+  if (aqi <= 50)  return { label: "Good", color: "#00E400", text: "#111111" };
+  if (aqi <= 100) return { label: "Moderate", color: "#FFFF00", text: "#111111" };
+  if (aqi <= 150) return { label: "Unhealthy for Sensitive Groups", color: "#FF7E00", text: "#111111" };
+  if (aqi <= 200) return { label: "Unhealthy", color: "#FF0000", text: "#FFFFFF" };
+  if (aqi <= 300) return { label: "Very Unhealthy", color: "#8F3F97", text: "#FFFFFF" };
+  return { label: "Hazardous", color: "#7E0023", text: "#FFFFFF" };
 }
-
 
 async function loadAQI() {
+  const indicator = document.getElementById("indicator");
+  try {
+    const response = await fetch("./data.json?t=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load AQI data");
 
-    try {
+    const data = await response.json();
+    const aqi = Number(data.aqi);
+    if (!Number.isFinite(aqi)) throw new Error("Invalid AQI");
 
-        /*
-        Timestamp prevents browsers from displaying
-        an old cached copy of data.json
-        */
+    const info = category(aqi);
+    document.getElementById("aqi").textContent = Math.round(aqi);
+    document.getElementById("status").textContent = info.label;
+    indicator.style.backgroundColor = info.color;
+    indicator.style.color = info.text;
 
-        const response = await fetch(
-            "data.json?t=" + new Date().getTime()
-        );
-
-        if (!response.ok) {
-            throw new Error("Could not load AQI data");
-        }
-
-        const data = await response.json();
-
-        const aqi = Number(data.aqi);
-
-        if (!Number.isFinite(aqi)) {
-            throw new Error("Invalid AQI");
-        }
-
-        document.getElementById("aqi").textContent = aqi;
-
-        document.getElementById("separator").textContent = " – ";
-
-        document.getElementById("status").textContent =
-            getStatus(aqi);
-
-
-        if (data.updated) {
-
-            const updated = new Date(data.updated);
-
-            document.getElementById("updated").textContent =
-                "King's College Doha • Updated " +
-                updated.toLocaleTimeString(
-                    "en-GB",
-                    {
-                        timeZone: "Asia/Qatar",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    }
-                );
-
-        }
-
+    if (data.updated) {
+      const updated = new Date(data.updated);
+      const time = updated.toLocaleTimeString("en-GB", {
+        timeZone: "Asia/Qatar",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      document.getElementById("updated").textContent = "Updated " + time + " Doha time";
     }
-
-    catch (error) {
-
-        console.error(error);
-
-        document.getElementById("aqi").textContent =
-            "Temporarily unavailable";
-
-        document.getElementById("separator").textContent = "";
-
-        document.getElementById("status").textContent = "";
-
-    }
-
+  } catch (error) {
+    console.error(error);
+    document.getElementById("aqi").textContent = "--";
+    document.getElementById("status").textContent = "Temporarily unavailable";
+    document.getElementById("updated").textContent = "Please check again shortly";
+    indicator.style.backgroundColor = "#e5e7eb";
+    indicator.style.color = "#111111";
+  }
 }
 
-
 loadAQI();
-
-/*
-Refresh the displayed data every 5 minutes.
-This doesn't contact IQAir.
-It simply checks our own data.json file.
-*/
-
 setInterval(loadAQI, 300000);
-
 </script>
-
 </body>
 </html>
