@@ -1,0 +1,68 @@
+name: Update Air Quality
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  update-air-quality:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Download IQAir data
+        run: |
+          curl --fail \
+          --silent \
+          --show-error \
+          "https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5" \
+          -o iqair.json
+
+
+      - name: Extract AQI
+        run: |
+
+          AQI=$(jq -r '.current.aqius' iqair.json)
+
+          echo "AQI received: $AQI"
+
+          if [ "$AQI" = "null" ] || [ -z "$AQI" ]; then
+            echo "Could not find AQI in IQAir response"
+            cat iqair.json
+            exit 1
+          fi
+
+          UPDATED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          jq -n \
+            --argjson aqi "$AQI" \
+            --arg updated "$UPDATED" \
+            '{aqi: $aqi, updated: $updated}' \
+            > data.json
+
+
+      - name: Commit updated AQI
+        run: |
+
+          git config user.name "AQI Updater"
+          git config user.email "actions@github.com"
+
+          git add data.json
+
+          if git diff --cached --quiet; then
+            echo "No change"
+          else
+            git commit -m "Update air quality"
+            git push
+          fi
