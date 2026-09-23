@@ -15,45 +15,57 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch IQAir and update data
+      - name: Fetch both IQAir stations
         shell: bash
         run: |
           set -euo pipefail
 
-          URL="https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5"
+          fetch_aqi () {
+            local url="$1"
+            local outfile="$2"
 
-          curl -L --fail --retry 3 --connect-timeout 20 --max-time 60             -A "Mozilla/5.0"             -H "Accept: application/json"             "$URL" -o iqair.json
+            curl -L --fail --retry 3 --connect-timeout 20 --max-time 60               -A "Mozilla/5.0"               -H "Accept: application/json"               "$url" -o "$outfile"
 
-          echo "IQAir response:"
-          cat iqair.json
-          echo
+            jq empty "$outfile"
 
-          jq empty iqair.json
+            jq -r '
+              [
+                .current.aqius,
+                .current.pollution.aqius,
+                .data.current.aqius,
+                .data.current.pollution.aqius,
+                .aqius,
+                .aqi
+              ]
+              | map(select(. != null))
+              | .[0] // empty
+            ' "$outfile"
+          }
 
-          AQI=$(jq -r '
-            [
-              .current.aqius,
-              .current.pollution.aqius,
-              .data.current.aqius,
-              .data.current.pollution.aqius,
-              .aqius,
-              .aqi
-            ]
-            | map(select(. != null))
-            | .[0] // empty
-          ' iqair.json)
+          AL_THUMAMA=$(fetch_aqi "https://device.iqair.com/v2/6a0ea9f1c5a918895e1e73a5" "al-thumama.json")
+          MESAIMEER=$(fetch_aqi "https://device.iqair.com/v2/695cd2716a2f38ed6082fcd4" "mesaimeer.json")
 
-          if [[ -z "$AQI" || ! "$AQI" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-            echo "No valid AQI value found in the IQAir response."
-            exit 1
-          fi
+          for value in "$AL_THUMAMA" "$MESAIMEER"; do
+            if [[ -z "$value" || ! "$value" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+              echo "A station returned an invalid AQI value."
+              exit 1
+            fi
+          done
 
-          AQI=$(printf "%.0f" "$AQI")
+          AL_THUMAMA=$(printf "%.0f" "$AL_THUMAMA")
+          MESAIMEER=$(printf "%.0f" "$MESAIMEER")
           UPDATED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          jq -n --argjson aqi "$AQI" --arg updated "$UPDATED"             '{aqi: $aqi, updated: $updated}' > data.json
+          jq -n             --argjson al_thumama "$AL_THUMAMA"             --argjson mesaimeer "$MESAIMEER"             --arg updated "$UPDATED"             '{
+              stations: {
+                al_thumama: {aqi: $al_thumama},
+                mesaimeer: {aqi: $mesaimeer}
+              },
+              updated: $updated
+            }' > data.json
 
-          cat data.json
+          echo "Al Thumama AQI: $AL_THUMAMA"
+          echo "Mesaimeer AQI: $MESAIMEER"
 
       - name: Commit updated AQI
         shell: bash
@@ -68,5 +80,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update live Al Thumama AQI"
+          git commit -m "Update live campus AQI readings"
           git push
