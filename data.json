@@ -1,11 +1,11 @@
 {
   "stations": {
     "al_thumama": {
-      "aqi": 88
+      "aqi": 86
     },
     "mesaimeer": {
-      "aqi": 81
+      "aqi": 79
     }
   },
-  "updated": "2026-09-23T19:48:43Z"
+  "updated": "2026-09-23T19:57:49Z"
 }
